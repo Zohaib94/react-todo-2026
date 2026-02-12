@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import type { Product } from '../../types';
 import { Link } from 'react-router';
+import type { Todo } from '../../types';
 
-function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+function TodosPage() {
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const fetchProducts = async (): Promise<Product[]> => {
-    const response = await axios.get('https://dummyjson.com/products');
-    return response.data.products;
+  const fetchTodos = async (): Promise<Todo[]> => {
+    const response = await axios.get('https://dummyjson.com/todos');
+    return response.data.todos;
   };
 
   useEffect(() => {
-    const getProducts = async (): Promise<void> => {
+    const getTodos = async (): Promise<void> => {
       try {
-        const data = await fetchProducts();
-        setProducts(data);
+        const data = await fetchTodos();
+        setTodos(data);
         setIsLoading(false);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
@@ -26,7 +26,7 @@ function ProductsPage() {
       }
     };
 
-    getProducts();
+    getTodos();
   }, []);
 
   return (
@@ -35,17 +35,17 @@ function ProductsPage() {
       {error && <span>{error}</span>}
       {!isLoading &&
         !error &&
-        products.map((product: Product) => (
-          <div key={product.id}>
+        todos.map((todo: Todo) => (
+          <div key={todo.id}>
             <span>
-              <Link to={`/products/${product.id}`}>{product.title}</Link>
+              <Link to={`/todos/${todo.id}`}>{todo.todo}</Link>
             </span>
             <span> - </span>
-            <span>{product.price}</span>
+            <span>{String(todo.completed)}</span>
           </div>
         ))}
     </>
   );
 }
 
-export default ProductsPage;
+export default TodosPage;

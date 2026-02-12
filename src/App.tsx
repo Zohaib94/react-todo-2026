@@ -1,14 +1,14 @@
 import React from 'react';
 
 import { Route, Routes } from 'react-router';
-import ProductsPage from './pages/Products';
-import ProductPage from './pages/Product';
+import TodosPage from './pages/Todos';
+import TodoPage from './pages/Todo';
 
 function App() {
   return (
     <Routes>
-      <Route path="/products/:id" element={<ProductPage />} />
-      <Route path="/" element={<ProductsPage />} />
+      <Route path="/todos/:id" element={<TodoPage />} />
+      <Route path="/" element={<TodosPage />} />
     </Routes>
   );
 }
