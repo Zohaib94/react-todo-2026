@@ -1,29 +1,47 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
+import { useEffect, useState } from 'react';
 import './App.css';
+import axios from 'axios';
+import type { Product } from './types';
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | undefined>(undefined);
+
+  const fetchProducts = async (): Promise<Product[]> => {
+    const response = await axios.get('https://dummyjson.com/products');
+    return response.data.products;
+  };
+
+  useEffect(() => {
+    const getProducts = async (): Promise<void> => {
+      try {
+        const data = await fetchProducts();
+        setProducts(data);
+        setIsLoading(false);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+        setError(errorMessage);
+        setIsLoading(false);
+      }
+    };
+
+    getProducts();
+  }, []);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+      {isLoading && <span>Loading.... please wait!</span>}
+      {error && <span>{error}</span>}
+      {!isLoading &&
+        !error &&
+        products.map((product: Product) => (
+          <div key={product.id}>
+            <span>{product.title}</span>
+            <span> - </span>
+            <span>{product.price}</span>
+          </div>
+        ))}
     </>
   );
 }
