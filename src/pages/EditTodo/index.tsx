@@ -1,64 +1,40 @@
-import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router';
-import type { Todo } from '../../types';
 import TodoForm from '../../components/TodoForm';
 import type { TodoFormInput } from '../../schemas/todo';
+import { useGetUsersQuery } from '../../store/api/userApi';
+import { useGetTodoQuery, useUpdateTodoMutation } from '../../store/api/todoApi';
 
 function EditTodoPage() {
-  const [todo, setTodo] = useState<Todo>();
-  const [isLoading, setIsLoading] = useState<boolean>();
-  const [errorMessage, setErrorMessage] = useState<string>();
   const { id } = useParams();
+  const { data: users } = useGetUsersQuery();
+  const { data: todo } = useGetTodoQuery(Number(id));
+  const [updateTodo, { isLoading, isSuccess, isError }] = useUpdateTodoMutation();
 
-  const fetchTodo = useCallback(async (): Promise<Todo> => {
-    const response = await axios.get(`https://dummyjson.com/todos/${id}`);
-    return response.data;
-  }, [id]);
-
-  const updateTodo = useCallback(
-    async (data: TodoFormInput): Promise<Todo> => {
-      const response = await axios.put(`https://dummyjson.com/todos/${id}`, data, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      return response.data;
-    },
-    [id],
-  );
-
-  useEffect(() => {
-    const getTodo = async (): Promise<void> => {
-      try {
-        const data = await fetchTodo();
-        setTodo(data);
-        setIsLoading(false);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-        console.log(errorMessage);
-        setIsLoading(false);
-        setErrorMessage(errorMessage);
-      }
-    };
-
-    getTodo();
-  }, [fetchTodo]);
+  const handleFormSubmission = async (data: TodoFormInput): Promise<void> => {
+    try {
+      await updateTodo({ id: todo?.id, ...data });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      console.log(errorMessage);
+    }
+  };
 
   return (
     <>
       {isLoading && <span>Loading....</span>}
-      {errorMessage && <span>{errorMessage}</span>}
-      {todo && (
+      {isError && <span>Failed....</span>}
+      {todo && users && (
         <TodoForm
           todo={{
             todo: todo.todo,
             completed: todo.completed,
             userId: todo.userId,
           }}
+          formStates={{ isError, isLoading, isSuccess }}
           formAction="update"
-          formSubmissionRequest={updateTodo}
+          formSubmissionHandler={handleFormSubmission}
+          users={users}
         />
       )}
     </>

@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import axios from 'axios';
 import { yupResolver } from '@hookform/resolvers/yup';
-import type { Todo, User } from '../../types';
+import type { User } from '../../types';
 import { todoFormSchema, type TodoFormInput } from '../../schemas/todo';
 
 type FormAction = 'create' | 'update';
@@ -14,19 +13,22 @@ const formSuccessMessages: Record<FormAction, string> = {
 
 export default function TodoForm({
   todo,
-  formSubmissionRequest,
+  formSubmissionHandler,
   formAction,
+  users,
+  formStates,
 }: Readonly<{
   todo?: TodoFormInput;
-  formSubmissionRequest: (data: TodoFormInput) => Promise<Todo>;
+  formSubmissionHandler: (data: TodoFormInput) => Promise<void>;
+  users: User[];
   formAction: 'create' | 'update';
+  formStates: {
+    isLoading: boolean;
+    isSuccess: boolean;
+    isError: boolean;
+  };
 }>) {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isUsersLoading, setIsUsersLoading] = useState<boolean>(true);
-
-  const [isFormSubmitting, setIsFormSubmitting] = useState<boolean>(false);
-  const [formSubmissionError, setFormSubmissionError] = useState<string>('');
-  const [formSubmissionSuccess, setFormSubmissionSuccess] = useState<boolean>(false);
+  const { isSuccess, isError, isLoading } = formStates;
 
   const {
     register,
@@ -37,52 +39,12 @@ export default function TodoForm({
     defaultValues: todo,
   });
 
-  const handleFormSubmission = async (data: TodoFormInput): Promise<void> => {
-    setIsFormSubmitting(true);
-    setFormSubmissionSuccess(false);
-    setFormSubmissionError('');
-
-    try {
-      await formSubmissionRequest(data);
-
-      setFormSubmissionSuccess(true);
-      setIsFormSubmitting(false);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-
-      setFormSubmissionError(errorMessage);
-      setIsFormSubmitting(false);
-    }
-  };
-
-  const onSubmit: SubmitHandler<TodoFormInput> = (data) => handleFormSubmission(data);
-
-  const fetchUsers = useCallback(async (): Promise<User[]> => {
-    const response = await axios.get(`https://dummyjson.com/users`);
-    return response.data.users;
-  }, []);
-
-  useEffect(() => {
-    const getUsers = async (): Promise<void> => {
-      try {
-        const data = await fetchUsers();
-        setUsers(data);
-        setIsUsersLoading(false);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-        console.log(errorMessage);
-        setUsers([]);
-        setIsUsersLoading(false);
-      }
-    };
-
-    getUsers();
-  }, [fetchUsers]);
+  const onSubmit: SubmitHandler<TodoFormInput> = (data) => formSubmissionHandler(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      {formSubmissionError && <span>{formSubmissionError}</span>}
-      {formSubmissionSuccess && <span>{formSuccessMessages[formAction]}</span>}
+      {isError && <span>Failed....</span>}
+      {isSuccess && <span>{formSuccessMessages[formAction]}</span>}
 
       <label>
         Todo Title <input {...register('todo')} />
@@ -108,7 +70,7 @@ export default function TodoForm({
       </label>
       {errors.userId && <span>{errors.userId.message}</span>}
 
-      <input type="submit" disabled={isUsersLoading || isFormSubmitting} />
+      <input type="submit" disabled={isLoading} />
     </form>
   );
 }
