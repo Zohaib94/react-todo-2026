@@ -3,7 +3,7 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import axios from 'axios';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import type { User } from '../../types';
+import type { Todo, User } from '../../types';
 
 const todoFormSchema = yup.object().shape({
   todo: yup.string().required('Please enter the title').min(8).max(50),
@@ -16,6 +16,10 @@ type TodoFormInput = yup.InferType<typeof todoFormSchema>;
 export default function NewTodoPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState<boolean>(true);
+  const [isTodoCreating, setIsTodoCreating] = useState<boolean>(false);
+  const [todoCreationError, setTodoCreationError] = useState<string>('');
+  const [isTodoCreationSuccess, setIsTodoCreationSuccess] = useState<boolean>(false);
+
   const {
     register,
     handleSubmit,
@@ -23,11 +27,40 @@ export default function NewTodoPage() {
   } = useForm<TodoFormInput>({
     resolver: yupResolver(todoFormSchema),
   });
-  const onSubmit: SubmitHandler<TodoFormInput> = (data) => console.log(data);
+
+  const handleTodoCreation = async (data: TodoFormInput): Promise<void> => {
+    setIsTodoCreating(true);
+    setIsTodoCreationSuccess(false);
+    setTodoCreationError('');
+
+    try {
+      await createTodo(data);
+
+      setIsTodoCreationSuccess(true);
+      setIsTodoCreating(false);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+
+      setTodoCreationError(errorMessage);
+      setIsTodoCreating(false);
+    }
+  };
+
+  const onSubmit: SubmitHandler<TodoFormInput> = (data) => handleTodoCreation(data);
 
   const fetchUsers = useCallback(async (): Promise<User[]> => {
     const response = await axios.get(`https://dummyjson.com/users`);
     return response.data.users;
+  }, []);
+
+  const createTodo = useCallback(async (data: TodoFormInput): Promise<Todo> => {
+    const response = await axios.post('https://dummyjson.com/todos/add', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
   }, []);
 
   useEffect(() => {
@@ -49,6 +82,9 @@ export default function NewTodoPage() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
+      {todoCreationError && <span>{todoCreationError}</span>}
+      {isTodoCreationSuccess && <span>Todo created successfully</span>}
+
       <label>
         Todo Title <input {...register('todo')} />
       </label>
@@ -73,7 +109,7 @@ export default function NewTodoPage() {
       </label>
       {errors.userId && <span>{errors.userId.message}</span>}
 
-      <input type="submit" disabled={isUsersLoading} />
+      <input type="submit" disabled={isUsersLoading || isTodoCreating} />
     </form>
   );
 }
