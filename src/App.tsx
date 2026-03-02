@@ -1,8 +1,8 @@
 import './App.css';
-import FormComponent from './Form';
+import ReactHookFormComponent from './ReactHookForm';
 
 function App() {
-  return <FormComponent />;
+  return <ReactHookFormComponent />;
 }
 
 export default App;
