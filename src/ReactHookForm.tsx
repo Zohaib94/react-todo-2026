@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 
 type Inputs = {
   text: string;
@@ -9,19 +11,30 @@ type Inputs = {
   date: string;
 };
 
+const schema = yup
+  .object({
+    text: yup.string().required(),
+    dropdown: yup.string().required(),
+    radio: yup.string().required(),
+    date: yup.string().required(),
+    checkbox: yup.array().of(yup.string().required()).required().min(1),
+  })
+  .required();
+
 export default function ReactHookFormComponent() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty, isValid },
   } = useForm<Inputs>({
     defaultValues: {
       text: 'zohaib',
       dropdown: 'option2',
       checkbox: ['green', 'blue'],
-      radio: 'Female',
-      date: '2026-03-03',
+      radio: 'Male',
     },
+    resolver: yupResolver(schema),
+    mode: 'onBlur',
   });
 
   const onSubmission = useCallback((data: Inputs) => {
@@ -35,6 +48,7 @@ export default function ReactHookFormComponent() {
         <label>
           Input Value: <input type="text" {...register('text')} />
         </label>
+        <p>{errors.text?.message}</p>
       </div>
 
       {/* DROPDOWN INPUT */}
@@ -47,6 +61,7 @@ export default function ReactHookFormComponent() {
             <option value="option2">Option 2</option>
           </select>
         </label>
+        <p>{errors.dropdown?.message}</p>
       </div>
 
       {/* CHECKBOX INPUT */}
@@ -60,6 +75,7 @@ export default function ReactHookFormComponent() {
         <label>
           <input {...register('checkbox')} type="checkbox" value="green" /> Green
         </label>
+        <p>{errors.checkbox?.message}</p>
       </div>
 
       {/* RADIO INPUT */}
@@ -71,6 +87,7 @@ export default function ReactHookFormComponent() {
         <label>
           <input {...register('radio')} type="radio" value="Female" /> Female
         </label>
+        <p>{errors.radio?.message}</p>
       </div>
 
       {/* DATE INPUT */}
@@ -78,10 +95,11 @@ export default function ReactHookFormComponent() {
         <label>
           Date: <input {...register('date')} type="date" />
         </label>
+        <p>{errors.date?.message}</p>
       </div>
 
       <div>
-        <input type="submit" value="Submit" />
+        <input type="submit" value="Submit" disabled={!isDirty || !isValid} />
       </div>
     </form>
   );
